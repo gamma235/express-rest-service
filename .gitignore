@@ -1,0 +1,8 @@
+_tmp
+journal
+node_modules
+local.0
+local.ns
+mongod.lock
+express-experiment.ns
+express-experiment.0
