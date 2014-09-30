@@ -13,6 +13,18 @@ $(document).ready(function() {
   // Delete User link click
   $('#userList table tbody').on('click', 'td a.linkdeleteuser', deleteUser);
 
+  // start the update user process
+  $('#userList table tbody').on('click', 'td a.linkupdateuser', changeUserInfo);
+
+  // Cancel Update User button click
+  $('#btnCancelUpdateUser').on('click', togglePanels);
+
+  // Add class to updated fields
+  $('#updateUser input').on('change', function(){$(this).addClass('updated')})
+
+  // Update User button click
+  $('#btnUpdateUser').on('click', updateUser);
+
   //on page load
   populateTable();
 });
@@ -32,7 +44,7 @@ function populateTable() {
       tableContent += '<tr>';
       tableContent += '<td><a href="#" class="linkshowuser" rel="' + this.username + '" title="Show Details">' + this.username + '</a></td>';
       tableContent += '<td>' + this.email + '</td>';
-      tableContent += '<td><a href="#" class="linkdeleteuser" rel="' + this._id + '">delete</a></td>';
+      tableContent += '<td><a href="#" class="linkdeleteuser" rel="' + this._id + '">delete</a>/<a href="#" class="linkupdateuser" rel="' + this._id + '">update</a></td>';
       tableContent += '</tr>';
     });
 
@@ -117,6 +129,84 @@ function addUser(event) {
   }
 };
 
+// put User Info into the 'Update User Panel'
+function changeUserInfo(event) {
+  //
+  event.preventDefault();
+
+  // If the addUser panel is visible, hide it and show updateUser panel
+  if($('#addUserPanel').is(":visible")){
+    togglePanels();
+  }
+
+  // Get Index of object based on _id value
+  var _id = $(this).attr('rel');
+  var arrayPosition = userListData.map(function(arrayItem) { return arrayItem._id; }).indexOf(_id);
+
+  // Get our User Object
+  var thisUserObject = userListData[arrayPosition];
+
+  // Populate Info Box
+  $('#updateUserFullname').val(thisUserObject.fullname);
+  $('#updateUserAge').val(thisUserObject.age);
+  $('#updateUserGender').val(thisUserObject.gender);
+  $('#updateUserLocation').val(thisUserObject.location);
+  $('#updateUserName').val(thisUserObject.username);
+  $('#updateUserEmail').val(thisUserObject.email);
+
+  // Put the userID into the REL of the 'update user' block
+  $('#updateUser').attr('rel',thisUserObject._id);
+};
+
+
+function updateUser(event){
+  event.preventDefault();
+
+  // Pop up a confirmation dialog
+  var confirmation = confirm('Are you sure you want to update this user?');
+
+  // Check and make sure the user confirmed
+  if (confirmation === true) {
+    // If they did, do our update
+
+    //set the _id of the user to be update
+    var _id = $(this).parentsUntil('div').parent().attr('rel');
+
+    //create a collection of the updated fields
+    var fieldsToBeUpdated = $('#updateUser input.updated');
+
+    //create an object of the pairs
+    var updatedFields = {};
+    $(fieldsToBeUpdated).each(function(){
+      var key = $(this).attr('placeholder').replace(" ","").toLowerCase();
+      var value = $(this).val();
+      updatedFields[key]=value;
+    });
+
+    // do the AJAX
+    $.ajax({
+      type: 'PUT',
+      url: '/users/updateuser/' + _id,
+      data: updatedFields
+    }).done(function( response ) {
+
+      // Check for a successful (blank) response
+      if (response.msg === '') {
+        togglePanels();
+      } else {
+        alert('Error: ' + response.msg);
+      }
+      // Update the table
+      populateTable();
+    });
+  }
+  else {
+
+    // If they said no to the confirm, do nothing
+    return false;
+  }
+};
+
 // Delete User
 function deleteUser(event) {
   event.preventDefault();
@@ -148,4 +238,10 @@ function deleteUser(event) {
     // If they said no to the confirm, do nothing
     return false;
   }
+};
+
+// Toggle addUser and updateUser panels
+function togglePanels(){
+  $('#addUserPanel').toggle();
+  $('#updateUserPanel').toggle();
 };
